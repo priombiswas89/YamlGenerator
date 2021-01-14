@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAddin3", "MyAddin3.csproj", "{A1607C53-0F36-4075-B71D-5B4E15632DCC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A1607C53-0F36-4075-B71D-5B4E15632DCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1607C53-0F36-4075-B71D-5B4E15632DCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1607C53-0F36-4075-B71D-5B4E15632DCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1607C53-0F36-4075-B71D-5B4E15632DCC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BCE3A685-D9A4-4177-82AB-3D1A65BC5BE3}
+	EndGlobalSection
+EndGlobal
