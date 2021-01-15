@@ -3,72 +3,51 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 
-namespace MyAddin3
+namespace YamlGenerator
 {
-    public class MyAddin3Class
+    public class YamlGeneratorMain
     {
-        #region Variable declarations
-
         //UserControl1 userControl1;
-        private List<string> packageNames = new List<string>();
         char[] charsToReplace = new char[] { ';', '\r', '\t', '\n' };
         string effectsList;
         string yamlData;
 
-        #endregion
-
-        #region Methods
-
-        public void EA_Connect(EA.Repository Rep)
+        public void EA_Connect(EA.Repository rep)
         {
             //userControl1 = (UserControl1)Rep.AddWindow("YAML Generator", "PackageListGrid.UserControl1") as UserControl1;
         }
-        public object EA_GetMenuItems(EA.Repository Repository, string Location, string MenuName)
+        public object EA_GetMenuItems(EA.Repository repository, string location, string menuName)
         {
-            if (MenuName == "")
+            if (menuName == "")
                 return "-&YAML Generator";
             else
             {
-                String[] ret = { "Save diagram as YAML", "About" };
+                string[] ret = { "Save diagram as YAML", "About" };
                 return ret;
             }
         }
-        public void EA_MenuClick(EA.Repository Rep, string Location, string MenuName, string ItemName)
+        public void EA_MenuClick(EA.Repository rep, string location, string menuName, string itemName)
         {
             //if (userControl1 == null)
             //{
             //    userControl1 = (UserControl1)Rep.AddWindow("YAML Generator", "PackageListGrid.UserControl1");
             //}
 
-            if (ItemName == "Save diagram as YAML")
+            if (itemName == "Save diagram as YAML")
             {
-                EA.Package pack;
                 EA.Diagram diag;
-                EA.Element ele;
                 DiagramElements diagramElementsObj = new DiagramElements();
 
-                switch (Rep.GetContextItemType())
+                switch (rep.GetContextItemType())
                 {
                     case EA.ObjectType.otPackage:
                         {
-                            pack = Rep.GetContextObject();
-                            EA.Collection elements = pack.Elements;
-
-                            foreach (EA.Element element in elements)
-                            {
-                                foreach (EA.Connector item in element.Connectors)
-                                {
-                                    int clientId = item.ClientID;
-                                    int supplierId = item.SupplierID;
-                                    EA.Element clientElement = Rep.GetElementByID(clientId);
-                                    EA.Element supplierElement = Rep.GetElementByID(supplierId);
-                                }
-                            }
+                            MessageBox.Show("Please select a diagram");
                             break;
                         }
                     case EA.ObjectType.otDiagram:
                         {
-                            diag = Rep.GetContextObject();
+                            diag = rep.GetContextObject();
 
                             diagramElementsObj.refDiagramId = diag.DiagramGUID;
                             diagramElementsObj.refDiagramName = diag.Name;
@@ -79,10 +58,10 @@ namespace MyAddin3
                             foreach (EA.DiagramObject diagramObj in diag.DiagramObjects)
                             {
                                 int diagramId = diagramObj.DiagramID;
-                                EA.Diagram diagram = Rep.GetDiagramByID(diagramId);
+                                EA.Diagram diagram = rep.GetDiagramByID(diagramId);
 
                                 int elementId = diagramObj.ElementID;
-                                EA.Element element = Rep.GetElementByID(elementId);
+                                EA.Element element = rep.GetElementByID(elementId);
 
                                 State stateObj = new State();
                                 stateObj.name = Utilities.FormatElementName(element.FQName);
@@ -93,23 +72,14 @@ namespace MyAddin3
                                 {
                                     GetOperationsByState(element, stateObj);
                                 }
-                                GetTransitionsByElement(Rep, diagramElementsObj, element);
-
+                                GetTransitionsByElement(rep, diagramElementsObj, element);
 
                             }
                             break;
                         }
                     case EA.ObjectType.otElement:
                         {
-                            ele = Rep.GetContextObject();
-
-                            foreach (EA.Connector item in ele.Connectors)
-                            {
-                                int clientId = item.ClientID;
-                                int supplierId = item.SupplierID;
-                                EA.Element clientElement = Rep.GetElementByID(clientId);
-                                EA.Element supplierElement = Rep.GetElementByID(supplierId);
-                            }
+                            MessageBox.Show("Please select a diagram");
                             break;
                         }
                 }
@@ -117,9 +87,10 @@ namespace MyAddin3
                 SerializeAsYaml(diagramElementsObj);
                 SaveDataAsYaml(diagramElementsObj);
             }
-            else if (ItemName == "About")
+            else if (itemName == "About")
             {
-                Rep.ShowAddinWindow("YAML Generator");
+                MessageBox.Show("Yaml Generator - Version 1.0");
+                //rep.ShowAddinWindow("About");
             }
         }
 
@@ -201,12 +172,12 @@ namespace MyAddin3
                     sw.WriteLine(yamlData);
             }
         }
+
         public void EA_Disconnect()
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
         }
-        #endregion
-
+      
     }
 }
