@@ -1,50 +1,19 @@
-﻿using Newtonsoft.Json;
-using PackageListGrid;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.ComponentModel;
 using System.Windows.Forms;
-using System.Text;
 
 namespace MyAddin3
 {
-    public class Operation
-    {
-        public string name { get; set; }
-        public string type { get; set; }
-    }
-    public class State
-    {
-        public string name { get; set; }
-        public List<Operation> operations { get; set; }
-
-    }
-    public class Transition
-    {
-        public string from { get; set; }
-        public string to { get; set; }
-        public string trigger { get; set; }
-        public string effects { get; set; }
-    }
-    public class DiagramElements
-    {
-        public string refDiagramId { get; set; }
-        public string refDiagramName { get; set; }
-        public List<State> states { get; set; }
-        public HashSet<Transition> transitions { get; set; }
-        public string initialState { get; set; }
-    }
-
-
     public class MyAddin3Class
     {
         #region Variable declarations
 
-        UserControl1 userControl1;
+        //UserControl1 userControl1;
         private List<string> packageNames = new List<string>();
         char[] charsToReplace = new char[] { ';', '\r', '\t', '\n' };
         string effectsList;
+        string yamlData;
 
         #endregion
 
@@ -52,7 +21,7 @@ namespace MyAddin3
 
         public void EA_Connect(EA.Repository Rep)
         {
-            userControl1 = (UserControl1)Rep.AddWindow("YAML Generator", "PackageListGrid.UserControl1") as UserControl1;
+            //userControl1 = (UserControl1)Rep.AddWindow("YAML Generator", "PackageListGrid.UserControl1") as UserControl1;
         }
         public object EA_GetMenuItems(EA.Repository Repository, string Location, string MenuName)
         {
@@ -60,18 +29,18 @@ namespace MyAddin3
                 return "-&YAML Generator";
             else
             {
-                String[] ret = { "Generate YAML", "About" };
+                String[] ret = { "Save diagram as YAML", "About" };
                 return ret;
             }
         }
         public void EA_MenuClick(EA.Repository Rep, string Location, string MenuName, string ItemName)
         {
-            if (userControl1 == null)
-            {
-                userControl1 = (UserControl1)Rep.AddWindow("YAML Generator", "PackageListGrid.UserControl1");
-            }
+            //if (userControl1 == null)
+            //{
+            //    userControl1 = (UserControl1)Rep.AddWindow("YAML Generator", "PackageListGrid.UserControl1");
+            //}
 
-            if (ItemName == "Generate YAML")
+            if (ItemName == "Save diagram as YAML")
             {
                 EA.Package pack;
                 EA.Diagram diag;
@@ -82,35 +51,17 @@ namespace MyAddin3
                 {
                     case EA.ObjectType.otPackage:
                         {
-
                             pack = Rep.GetContextObject();
-
                             EA.Collection elements = pack.Elements;
 
                             foreach (EA.Element element in elements)
                             {
-                                if (element.Type != "Trigger")
-                                {
-                                    #region For displaying in ListBox
-                                    packageNames.Add("----------------------");
-                                    packageNames.Add($"{element.Type} : {element.Name}");
-                                    packageNames.Add("----------------------");
-                                    #endregion
-                                }
                                 foreach (EA.Connector item in element.Connectors)
                                 {
                                     int clientId = item.ClientID;
                                     int supplierId = item.SupplierID;
                                     EA.Element clientElement = Rep.GetElementByID(clientId);
                                     EA.Element supplierElement = Rep.GetElementByID(supplierId);
-
-                                    #region For displaying in ListBox
-                                    packageNames.Add("------");
-                                    packageNames.Add($" From : {clientElement.Name}");
-                                    packageNames.Add($" To: {supplierElement.Name}");
-                                    packageNames.Add($" Trigger: {item.TransitionEvent}");
-                                    packageNames.Add($" Effect: {item.TransitionAction}");
-                                    #endregion
                                 }
                             }
                             break;
@@ -133,76 +84,18 @@ namespace MyAddin3
                                 int elementId = diagramObj.ElementID;
                                 EA.Element element = Rep.GetElementByID(elementId);
 
-                                #region Get States
-
                                 State stateObj = new State();
-                                //string stateName = element.FQName.Substring(element.FQName.IndexOf(".") + 1).Trim();
-                                //stateName = stateName.Replace(".", "/");
-                                //stateObj.name = stateName;
                                 stateObj.name = Utilities.FormatElementName(element.FQName);
                                 stateObj.operations = new List<Operation>();
                                 diagramElementsObj.states.Add(stateObj);
 
-                                #region Get actions of a state
                                 if (element.Methods.Count > 0)
                                 {
-                                    foreach (EA.Method meth in element.Methods)
-                                    {
-                                        Operation operationObj = new Operation();
-                                        operationObj.name = meth.Name;
-                                        operationObj.type = meth.ReturnType;
-                                        stateObj.operations.Add(operationObj);
-                                    }
+                                    GetOperationsByState(element, stateObj);
                                 }
+                                GetTransitionsByElement(Rep, diagramElementsObj, element);
 
-                                #endregion
 
-                                #endregion
-
-                                #region Get transitions
-
-                                foreach (EA.Connector item in element.Connectors)
-                                {
-                                    bool isOld = false;
-                                    int clientId = item.ClientID;
-                                    int supplierId = item.SupplierID;
-                                    EA.Element clientElement = Rep.GetElementByID(clientId);
-                                    EA.Element supplierElement = Rep.GetElementByID(supplierId);
-
-                                    Transition transitionObj = new Transition();
-                                    transitionObj.from = Utilities.FormatElementName(clientElement.FQName);
-                                    transitionObj.to = Utilities.FormatElementName(supplierElement.FQName);
-                                    transitionObj.trigger = item.TransitionEvent;
-
-                                    effectsList = item.TransitionAction;
-                                    effectsList = effectsList.ReplaceAll(charsToReplace, ',');
-                                    effectsList = Utilities.TruncateCommas(effectsList);
-
-                                    if (string.IsNullOrEmpty(effectsList))
-                                    {
-                                        transitionObj.effects = "";
-                                    }
-                                    else
-                                    {
-                                        transitionObj.effects = $"[{effectsList}]";
-                                    }
-
-                                    foreach (var transItem in diagramElementsObj.transitions)
-                                    {
-                                        if (transItem.from.Equals(transitionObj.from) && transItem.to.Equals(transitionObj.to))
-                                        {
-                                            isOld = true;
-                                            break;
-                                        }
-                                    }
-                                    if (!isOld)
-                                    {
-                                        diagramElementsObj.transitions.Add(transitionObj);
-                                    }
-
-                                } 
-
-                                #endregion
                             }
                             break;
                         }
@@ -210,45 +103,19 @@ namespace MyAddin3
                         {
                             ele = Rep.GetContextObject();
 
-                            #region For displaying in ListBox
-                            packageNames.Add("----------------------");
-                            packageNames.Add($"{ele.Type} : {ele.Name}");
-                            packageNames.Add("----------------------");
-                            #endregion
-
                             foreach (EA.Connector item in ele.Connectors)
                             {
                                 int clientId = item.ClientID;
                                 int supplierId = item.SupplierID;
                                 EA.Element clientElement = Rep.GetElementByID(clientId);
                                 EA.Element supplierElement = Rep.GetElementByID(supplierId);
-
-                                #region For displaying in ListBox
-                                packageNames.Add("----------------------");
-                                packageNames.Add($" From : {clientElement.Name}");
-                                packageNames.Add($" To: {supplierElement.Name}");
-                                packageNames.Add($" Trigger: {item.TransitionEvent}");
-                                packageNames.Add($" Effect: {item.TransitionAction}");
-                                #endregion
                             }
                             break;
                         }
                 }
 
-                #region YAML Serialization
-
-                var serializer = new YamlDotNet.Serialization.SerializerBuilder()
-                .WithEmissionPhaseObjectGraphVisitor(args => new YamlIEnumerableSkipEmptyObjectGraphVisitor(args.InnerVisitor))
-                .Build();
-
-                using (var writer = new StringWriter())
-                {
-                    serializer.Serialize(writer, diagramElementsObj);
-                    var yaml = writer.ToString();
-                    userControl1.setYamlContent(diagramElementsObj.refDiagramName, yaml);
-                }
-                #endregion
-                Rep.ShowAddinWindow("YAML Generator");
+                SerializeAsYaml(diagramElementsObj);
+                SaveDataAsYaml(diagramElementsObj);
             }
             else if (ItemName == "About")
             {
@@ -256,22 +123,90 @@ namespace MyAddin3
             }
         }
 
-        private void GetNestedElement(EA.Element element)
+        private static void GetOperationsByState(EA.Element element, State stateObj)
         {
-            //Here's where you should write the code to actually do something with the element
-            foreach (EA.Element child in element.Elements)
+            foreach (EA.Method meth in element.Methods)
             {
-                GetNestedElement(child);
+                Operation operationObj = new Operation();
+                operationObj.name = meth.Name;
+                operationObj.type = meth.ReturnType;
+                stateObj.operations.Add(operationObj);
             }
         }
+        private void GetTransitionsByElement(EA.Repository Rep, DiagramElements diagramElementsObj, EA.Element element)
+        {
+            foreach (EA.Connector item in element.Connectors)
+            {
+                bool isOld = false;
+                int clientId = item.ClientID;
+                int supplierId = item.SupplierID;
+                EA.Element clientElement = Rep.GetElementByID(clientId);
+                EA.Element supplierElement = Rep.GetElementByID(supplierId);
 
+                Transition transitionObj = new Transition();
+                transitionObj.from = Utilities.FormatElementName(clientElement.FQName);
+                transitionObj.to = Utilities.FormatElementName(supplierElement.FQName);
+                transitionObj.trigger = item.TransitionEvent;
+
+                effectsList = item.TransitionAction;
+                effectsList = effectsList.ReplaceAll(charsToReplace, ',');
+                effectsList = Utilities.TruncateCommas(effectsList);
+
+                if (string.IsNullOrEmpty(effectsList))
+                {
+                    transitionObj.effects = "";
+                }
+                else
+                {
+                    transitionObj.effects = $"[{effectsList}]";
+                }
+
+                foreach (var transItem in diagramElementsObj.transitions)
+                {
+                    if (transItem.from.Equals(transitionObj.from) && transItem.to.Equals(transitionObj.to))
+                    {
+                        isOld = true;
+                        break;
+                    }
+                }
+                if (!isOld)
+                {
+                    diagramElementsObj.transitions.Add(transitionObj);
+                }
+
+            }
+        }
+        private void SerializeAsYaml(DiagramElements diagramElementsObj)
+        {
+            var serializer = new YamlDotNet.Serialization.SerializerBuilder()
+                            .WithEmissionPhaseObjectGraphVisitor(args => new YamlIEnumerableSkipEmptyObjectGraphVisitor(args.InnerVisitor))
+                            .Build();
+
+            using (var writer = new StringWriter())
+            {
+                serializer.Serialize(writer, diagramElementsObj);
+                yamlData = writer.ToString();
+                //userControl1.setYamlContent(diagramElementsObj.refDiagramName, yamlData);
+            }
+        }
+        private void SaveDataAsYaml(DiagramElements diagramElementsObj)
+        {
+            SaveFileDialog savefile = new SaveFileDialog();
+            savefile.FileName = diagramElementsObj.refDiagramName;
+            savefile.Filter = "YAML files (*.yaml)|*.yaml|All files (*.*)|*.*";
+
+            if (savefile.ShowDialog() == DialogResult.OK)
+            {
+                using (StreamWriter sw = new StreamWriter(savefile.FileName))
+                    sw.WriteLine(yamlData);
+            }
+        }
         public void EA_Disconnect()
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
         }
         #endregion
-
 
     }
 }
