@@ -64,16 +64,19 @@ namespace YamlGenerator
 
                                 if (element.MetaType == "Pseudostate")
                                 {
-                                    diagramElementsObj.initialState = Utilities.FormatElementName(element.FQName);
+                                    diagramElementsObj.initialState = Utilities.FormatElementName(element.Name);
                                 }
                                 else if(element.MetaType == "FinalState")
                                 {
-                                    diagramElementsObj.finalState = Utilities.FormatElementName(element.FQName);
+                                    diagramElementsObj.finalState = Utilities.FormatElementName(element.Name);
                                 }
-                                else
+                                else 
                                 {
-                                    stateObj.name = Utilities.FormatElementName(element.FQName);
-                                    diagramElementsObj.states.Add(stateObj);
+                                    if (element.MetaType == "State")
+                                    {
+                                        stateObj.name = Utilities.FormatElementName(element.FQName);
+                                        diagramElementsObj.states.Add(stateObj);
+                                    }    
                                 }
                                 
                                 if (element.Methods.Count > 0)
@@ -115,33 +118,33 @@ namespace YamlGenerator
             {
                 if (method.ReturnType.Equals("entry"))
                 {
-                    entryAc.Append($"{method.Name},");
+                    entryAc.Append(method.Name + ",");
                 }
                 else if (method.ReturnType.Equals("exit"))
                 {
-                    exitAc.Append($"{method.Name},");
+                    exitAc.Append(method.Name + ",");
                 }
                 else
                 {
-                    doAc.Append($"{method.Name},");
+                    doAc.Append(method.Name + ",");
                 }
 
                 if (entryAc.Length != 0)
                 {
                     entryActions = entryAc.ToString().TrimEnd(',');
-                    stateObj.entryActions = $"[{entryActions}]";
+                    stateObj.entryActions = "[" + entryActions + "]";
                 }
 
                 if (exitAc.Length != 0)
                 {
                     exitActions = exitAc.ToString().TrimEnd(',');
-                    stateObj.exitActions = $"[{exitActions}]";
+                    stateObj.exitActions = "["+exitActions+"]"; 
                 }
 
                 if (doAc.Length != 0)
                 {
                     doActions = doAc.ToString().TrimEnd(',');
-                    stateObj.doActions = $"[{doActions}]";
+                    stateObj.doActions = "[" + doActions + "]";
                 }
             }
         }
@@ -170,9 +173,8 @@ namespace YamlGenerator
                 }
                 else
                 {
-                    transitionObj.effects = $"[{effectsList}]";
+                    transitionObj.effects = "[" + effectsList + "]"; 
                 }
-
                 foreach (var transItem in diagramElementsObj.transitions)
                 {
                     if (transItem.from.Equals(transitionObj.from) && transItem.to.Equals(transitionObj.to))
